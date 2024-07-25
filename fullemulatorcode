@@ -1,0 +1,101 @@
+class CPU:
+    def __init__(self):
+        self.A = 0  # Accumulator
+        self.X = 0  # X register
+        self.Y = 0  # Y register
+        self.PC = 0  # Program Counter
+        self.SP = 0xFD  # Stack Pointer
+        self.P = 0x24  # Processor Status
+        self.memory = [0] * 0x10000  # 64KB Memory
+
+    def reset(self):
+        self.PC = self.memory[0xFFFC] | (self.memory[0xFFFD] << 8)
+
+    def fetch_byte(self):
+        byte = self.memory[self.PC]
+        self.PC += 1
+        return byte
+
+    def execute_instruction(self):
+        opcode = self.fetch_byte()
+        if opcode == 0xA9:  # LDA Immediate
+            value = self.fetch_byte()
+            self.A = value
+            self.set_zero_and_negative_flags(self.A)
+        else:
+            print(f"Unsupported opcode: {hex(opcode)}")
+
+    def set_zero_and_negative_flags(self, value):
+        if value == 0:
+            self.P |= 0x02  # Zero flag
+        else:
+            self.P &= ~0x02
+        if value & 0x80:
+            self.P |= 0x80  # Negative flag
+        else:
+            self.P &= ~0x80
+
+import pygame
+
+class Input:
+    def __init__(self):
+        pygame.init()
+        self.keys = {
+            "A": pygame.K_z,
+            "B": pygame.K_x,
+            "SELECT": pygame.K_a,
+            "START": pygame.K_s,
+            "UP": pygame.K_UP,
+            "DOWN": pygame.K_DOWN,
+            "LEFT": pygame.K_LEFT,
+            "RIGHT": pygame.K_RIGHT,
+        }
+        self.state = {key: False for key in self.keys}
+
+    def update(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+                for key, value in self.keys.items():
+                    if event.key == value:
+                        self.state[key] = (event.type == pygame.KEYDOWN)
+
+    def get_state(self):
+        return self.state
+
+class NES:
+    def __init__(self):
+        self.cpu = CPU()
+        self.input = Input()
+
+    def load_rom(self, rom_path):
+        with open(rom_path, 'rb') as f:
+            rom = f.read()
+        # Load ROM into memory (implement the details)
+
+    def reset(self):
+        self.cpu.reset()
+        # Reset other components (PPU, APU, etc.)
+
+    def run(self):
+        clock = pygame.time.Clock()
+        while True:
+            self.input.update()
+            self.cpu.execute_instruction()
+            # self.ppu.render()  # Render a frame
+            # self.apu.play()  # Play audio
+            # Handle inputs, interrupts, etc.
+
+            # Print input state for debugging
+            print(self.input.get_state())
+
+            clock.tick(60)  # Run at 60 frames per second
+
+# Load and run the emulator
+nes = NES()
+nes.load_rom('path_to_rom_file')
+nes.reset()
+nes.run()
+
